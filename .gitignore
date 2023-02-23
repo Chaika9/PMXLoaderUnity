@@ -14,5 +14,6 @@
 ### IDE ###
 .vs
 .vscode
+.idea
 *.csproj
 *.sln
