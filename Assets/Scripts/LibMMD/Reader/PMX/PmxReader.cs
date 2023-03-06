@@ -1,57 +1,77 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
+using System.Text;
 using LibMMD.Model;
 
 namespace LibMMD.Reader.PMX {
     public class PmxReader : ModelReader {
         protected override MmdModel ReadModel(BinaryReader reader) {
+            PmxHeader header = ReadHeader(reader);
+            
+            // Check magic
+            if (!"PMX ".Equals(header.Magic)) {
+                throw new ModelFormatException("Invalid PMX file");
+            }
+            
+            // Check version (only support 2.0)
+            if (Math.Abs(header.Version - 2.0f) > 0.0001f) {
+                throw new ModelFormatException("Unsupported PMX version");
+            }
+            
+            var model = new MmdModel();
+            return model;
+        }
+        
+        private static PmxHeader ReadHeader(BinaryReader reader) {
+            var header = new PmxHeader {
+                Magic = ReaderUtil.ReadString(reader, Encoding.ASCII, 4),
+                Version = reader.ReadSingle(),
+                FileFlagSize = reader.ReadByte()
+            };
+            return header;
+        }
+        
+        private static PmxConfig ReadConfig(BinaryReader reader, MmdModel model) {
             throw new System.NotImplementedException();
         }
         
-        private PmxReader ReadHeader(BinaryReader reader) {
+        private static void ReadModelInfo(BinaryReader reader, MmdModel model) {
             throw new System.NotImplementedException();
         }
         
-        private PmxConfig ReadConfig(BinaryReader reader, MmdModel model) {
+        private static void ReadVertices(BinaryReader reader, MmdModel model) {
             throw new System.NotImplementedException();
         }
         
-        private void ReadModelInfo(BinaryReader reader, MmdModel model) {
+        private static void ReadTriangles(BinaryReader reader, MmdModel model) {
             throw new System.NotImplementedException();
         }
         
-        private void ReadVertices(BinaryReader reader, MmdModel model) {
+        private  static void ReadTextures(BinaryReader reader, MmdModel model) {
             throw new System.NotImplementedException();
         }
         
-        private void ReadTriangles(BinaryReader reader, MmdModel model) {
+        private static void ReadParts(BinaryReader reader, MmdModel model) {
             throw new System.NotImplementedException();
         }
         
-        private void ReadTextures(BinaryReader reader, MmdModel model) {
+        private static void ReadBones(BinaryReader reader, MmdModel model) {
             throw new System.NotImplementedException();
         }
         
-        private void ReadParts(BinaryReader reader, MmdModel model) {
+        private static void ReadMorphs(BinaryReader reader, MmdModel model) {
             throw new System.NotImplementedException();
         }
         
-        private void ReadBones(BinaryReader reader, MmdModel model) {
+        private static void ReadEntries(BinaryReader reader, MmdModel model) {
             throw new System.NotImplementedException();
         }
         
-        private void ReadMorphs(BinaryReader reader, MmdModel model) {
+        private static void ReadRigidBodies(BinaryReader reader, MmdModel model) {
             throw new System.NotImplementedException();
         }
         
-        private void ReadEntries(BinaryReader reader, MmdModel model) {
-            throw new System.NotImplementedException();
-        }
-        
-        private void ReadRigidBodies(BinaryReader reader, MmdModel model) {
-            throw new System.NotImplementedException();
-        }
-        
-        private void ReadConstraints(BinaryReader reader, MmdModel model) {
+        private static void ReadConstraints(BinaryReader reader, MmdModel model) {
             throw new System.NotImplementedException();
         }
     }
