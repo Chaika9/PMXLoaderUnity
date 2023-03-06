@@ -46,6 +46,7 @@ namespace LibMMD.Reader.PMX {
             ReadMorphs(reader, model, config);
             ReadEntries(reader, config);
             ReadRigidBodies(reader, model, config);
+            ReadConstraints(reader, model, config);
             return model;
         }
         
@@ -558,8 +559,38 @@ namespace LibMMD.Reader.PMX {
             return rigidBody;
         }
         
-        private static void ReadConstraints(BinaryReader reader, MmdModel model) {
-            throw new System.NotImplementedException();
+        private static void ReadConstraints(BinaryReader reader, MmdModel model, PmxConfig config) {
+            uint nbConstraints = reader.ReadUInt32();
+            model.Constraints = new Constraint[nbConstraints];
+            
+            for (uint i = 0; i < nbConstraints; i++) {
+                model.Constraints[i] = ReadConstraint(reader, config);
+            }
+        }
+        
+        private static Constraint ReadConstraint(BinaryReader reader, PmxConfig config) {
+            var constraint = new Constraint {
+                Name = ReaderUtil.ReadString(reader, config.Encoding),
+                NameEnglish = ReaderUtil.ReadString(reader, config.Encoding)
+            };
+            
+            byte dofType = reader.ReadByte();
+            if (dofType == 0) {
+                constraint.AssociatedRigidBodyIndex = new int[2];
+                constraint.AssociatedRigidBodyIndex[0] = ReaderUtil.ReadIndex(reader, config.RigidBodyIndexSize);
+                constraint.AssociatedRigidBodyIndex[1] = ReaderUtil.ReadIndex(reader, config.RigidBodyIndexSize);
+                constraint.Position = ReaderUtil.ReadVector3(reader);
+                constraint.Rotation = ReaderUtil.ReadVector3(reader);
+                constraint.PositionLowLimit = ReaderUtil.ReadVector3(reader);
+                constraint.PositionHighLimit = ReaderUtil.ReadVector3(reader);
+                constraint.RotationLowLimit = ReaderUtil.ReadVector3(reader);
+                constraint.RotationHighLimit = ReaderUtil.ReadVector3(reader);
+                constraint.SpringTranslate = ReaderUtil.ReadVector3(reader);
+                constraint.SpringRotate = ReaderUtil.ReadVector3(reader);
+            } else {
+                throw new ModelParseException("Unsupported constraint type. Only 6DOF is supported.");
+            }
+            return constraint;
         }
         
         [Flags]
