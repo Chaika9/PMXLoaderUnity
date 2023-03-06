@@ -19,6 +19,7 @@ namespace LibMMD.Reader.PMX {
             }
             
             var model = new MmdModel();
+            PmxConfig config = ReadConfig(reader, model);
             return model;
         }
         
@@ -32,7 +33,22 @@ namespace LibMMD.Reader.PMX {
         }
         
         private static PmxConfig ReadConfig(BinaryReader reader, MmdModel model) {
-            throw new System.NotImplementedException();
+            var config = new PmxConfig {
+                IsUtf8Encoding = reader.ReadByte() != 0,
+                AdditionalUVCount = reader.ReadByte(),
+                VertexIndexSize = reader.ReadByte(),
+                TextureIndexSize = reader.ReadByte(),
+                MaterialIndexSize = reader.ReadByte(),
+                BoneIndexSize = reader.ReadByte(),
+                MorphIndexSize = reader.ReadByte(),
+                RigidBodyIndexSize = reader.ReadByte()
+            };
+            
+            // Set encoding
+            config.Encoding = config.IsUtf8Encoding ? Encoding.UTF8 : Encoding.Unicode;
+            
+            model.AdditionalUVCount = config.AdditionalUVCount;
+            return config;
         }
         
         private static void ReadModelInfo(BinaryReader reader, MmdModel model) {

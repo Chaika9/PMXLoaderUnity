@@ -5,5 +5,6 @@
         public string Comment { get; set; }
         public string CommentEnglish { get; set; }
         public Vertex[] Vertices { get; set; }
+        public int AdditionalUVCount { get; set; }
     }
 }
