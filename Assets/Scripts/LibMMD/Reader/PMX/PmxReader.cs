@@ -20,6 +20,7 @@ namespace LibMMD.Reader.PMX {
             
             var model = new MmdModel();
             PmxConfig config = ReadConfig(reader, model);
+            ReadModelInfo(reader, model, config);
             return model;
         }
         
@@ -51,8 +52,11 @@ namespace LibMMD.Reader.PMX {
             return config;
         }
         
-        private static void ReadModelInfo(BinaryReader reader, MmdModel model) {
-            throw new System.NotImplementedException();
+        private static void ReadModelInfo(BinaryReader reader, MmdModel model, PmxConfig config) {
+            model.Name = ReaderUtil.ReadString(reader, config.Encoding);
+            model.NameEnglish = ReaderUtil.ReadString(reader, config.Encoding);
+            model.Comment = ReaderUtil.ReadString(reader, config.Encoding);
+            model.CommentEnglish = ReaderUtil.ReadString(reader, config.Encoding);
         }
         
         private static void ReadVertices(BinaryReader reader, MmdModel model) {
