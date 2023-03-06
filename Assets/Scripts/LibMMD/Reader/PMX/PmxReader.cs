@@ -42,6 +42,7 @@ namespace LibMMD.Reader.PMX {
             ReadTriangles(reader, model, config);
             string[] texturePaths = ReadTexturePaths(reader, config);
             ReadParts(reader, model, config, texturePaths);
+            ReadBones(reader, model, config);
             return model;
         }
         
@@ -241,12 +242,12 @@ namespace LibMMD.Reader.PMX {
                 AmbientColor = ReaderUtil.ReadColor(reader)
             };
 
-            byte drawFlag = reader.ReadByte();
-            material.DrawDoubleFace = (drawFlag & PmxMaterialDrawFlags.PmxMaterialDrawDoubleFace) != 0;
-            material.DrawGroundShadow = (drawFlag & PmxMaterialDrawFlags.PmxMaterialDrawGroundShadow) != 0;
-            material.CastSelfShadow = (drawFlag & PmxMaterialDrawFlags.PmxMaterialCastSelfShadow) != 0;
-            material.DrawSelfShadow = (drawFlag & PmxMaterialDrawFlags.PmxMaterialDrawSelfShadow) != 0;
-            material.DrawEdge = (drawFlag & PmxMaterialDrawFlags.PmxMaterialDrawEdge) != 0;
+            var drawFlag = (PmxMaterialDrawFlags) reader.ReadByte();
+            material.DrawDoubleFace = (drawFlag & PmxMaterialDrawFlags.MaterialDrawDoubleFace) != 0;
+            material.DrawGroundShadow = (drawFlag & PmxMaterialDrawFlags.MaterialDrawGroundShadow) != 0;
+            material.CastSelfShadow = (drawFlag & PmxMaterialDrawFlags.MaterialCastSelfShadow) != 0;
+            material.DrawSelfShadow = (drawFlag & PmxMaterialDrawFlags.MaterialDrawSelfShadow) != 0;
+            material.DrawEdge = (drawFlag & PmxMaterialDrawFlags.MaterialDrawEdge) != 0;
             
             material.EdgeColor = ReaderUtil.ReadColor(reader, true);
             material.EdgeSize = reader.ReadSingle();
@@ -262,7 +263,7 @@ namespace LibMMD.Reader.PMX {
             if (subTextureIndex < texturePaths.Count && subTextureIndex >= 0) {
                 material.SubTexturePath = texturePaths[subTextureIndex];
             }
-            material.SubTextureType = (MmdMaterial.SubTextureTypeFlag) reader.ReadByte();
+            material.SubTextureType = (MmdMaterial.SubTextureTypeFlags) reader.ReadByte();
             
             bool useGlobalToon = reader.ReadByte() != 0;
             if (useGlobalToon) {
@@ -282,8 +283,113 @@ namespace LibMMD.Reader.PMX {
             return material;
         }
         
-        private static void ReadBones(BinaryReader reader, MmdModel model) {
-            throw new System.NotImplementedException();
+        private static void ReadBones(BinaryReader reader, MmdModel model, PmxConfig config) {
+            uint nbBones = reader.ReadUInt32();
+            model.Bones = new Bone[nbBones];
+            
+            for (uint i = 0; i < nbBones; i++) {
+                model.Bones[i] = ReadBone(reader, config, nbBones);
+            }
+        }
+
+        private static Bone ReadBone(BinaryReader reader, PmxConfig config, uint nbBones) {
+            var bone = new Bone {
+                Name = ReaderUtil.ReadString(reader, config.Encoding),
+                NameEnglish = ReaderUtil.ReadString(reader, config.Encoding),
+                Position = ReaderUtil.ReadVector3(reader)
+            };
+            
+            int parentIndex = ReaderUtil.ReadIndex(reader, config.BoneIndexSize);
+            if (parentIndex < nbBones && parentIndex >= 0) {
+                bone.ParentIndex = parentIndex;
+            } else {
+                bone.ParentIndex = -1;
+            }
+            
+            bone.TransformLevel = reader.ReadInt32();
+            
+            var boneFlags = (PmxBoneFlags) reader.ReadUInt16();
+            bone.Rotatable = (boneFlags & PmxBoneFlags.BoneRotatable) != 0;
+            bone.Movable = (boneFlags & PmxBoneFlags.BoneMovable) != 0;
+            bone.Visible = (boneFlags & PmxBoneFlags.BoneVisible) != 0;
+            bone.Controllable = (boneFlags & PmxBoneFlags.BoneControllable) != 0;
+            bone.HasIk = (boneFlags & PmxBoneFlags.BoneHasIk) != 0;
+            bone.AppendRotate = (boneFlags & PmxBoneFlags.BoneAcquireRotate) != 0;
+            bone.AppendTranslate = (boneFlags & PmxBoneFlags.BoneAcquireTranslate) != 0;
+            bone.RotAxisFixed = (boneFlags & PmxBoneFlags.BoneRotAxisFixed) != 0;
+            bone.UseLocalAxis = (boneFlags & PmxBoneFlags.BoneUseLocalAxis) != 0;
+            bone.PostPhysics = (boneFlags & PmxBoneFlags.BonePostPhysics) != 0;
+            bone.ReceiveTransform = (boneFlags & PmxBoneFlags.BoneReceiveTransform) != 0;
+            bone.ChildBoneValue.ChildUseIndex = (boneFlags & PmxBoneFlags.BoneChildUseIndex) != 0;
+
+            if (bone.ChildBoneValue.ChildUseIndex) {
+                bone.ChildBoneValue.Index = ReaderUtil.ReadIndex(reader, config.BoneIndexSize);
+            } else {
+                bone.ChildBoneValue.Offset = ReaderUtil.ReadVector3(reader);
+            }
+            
+            if (bone.RotAxisFixed) {
+                bone.RotAxis = ReaderUtil.ReadVector3(reader);
+            }
+            
+            if (bone.AppendRotate || bone.AppendTranslate) {
+                bone.AppendBoneValue.Index = ReaderUtil.ReadIndex(reader, config.BoneIndexSize);
+                bone.AppendBoneValue.Ratio = reader.ReadSingle();
+            }
+
+            if (bone.UseLocalAxis) {
+                Vector3 localX = ReaderUtil.ReadVector3(reader);
+                Vector3 localZ = ReaderUtil.ReadVector3(reader);
+                Vector3 localY = Vector3.Cross(localZ, localX);
+                localZ = Vector3.Cross(localX, localY);
+                
+                localX.Normalize();
+                localY.Normalize();
+                localZ.Normalize();
+                
+                bone.LocalAxisValue.AxisX = localX;
+                bone.LocalAxisValue.AxisY = localY;
+                bone.LocalAxisValue.AxisZ = localZ;
+            }
+
+            if (bone.ReceiveTransform) {
+                bone.ExportKey = reader.ReadInt32();
+            }
+            
+            if (bone.HasIk) {
+                bone.Ik = ReadIk(reader, config);
+            }
+            
+            return bone;
+        }
+        
+        private static Bone.IkInfo ReadIk(BinaryReader reader, PmxConfig config) {
+            var ik = new Bone.IkInfo {
+                TargetIndex = ReaderUtil.ReadIndex(reader, config.BoneIndexSize),
+                IterateLimit = reader.ReadInt32(),
+                AngleLimit = reader.ReadSingle()
+            };
+            
+            uint nbLinks = reader.ReadUInt32();
+            ik.Links = new Bone.IkLink[nbLinks];
+            
+            for (uint i = 0; i < nbLinks; i++) {
+                ik.Links[i] = ReadIkLink(reader, config);
+            }
+            return ik;
+        }
+        
+        private static Bone.IkLink ReadIkLink(BinaryReader reader, PmxConfig config) {
+            var link = new Bone.IkLink {
+                LinkIndex = ReaderUtil.ReadIndex(reader, config.BoneIndexSize),
+                HasLimit = reader.ReadByte() != 0
+            };
+            
+            if (link.HasLimit) {
+                link.MaxLimit = ReaderUtil.ReadVector3(reader);
+                link.MinLimit = ReaderUtil.ReadVector3(reader);
+            }
+            return link;
         }
         
         private static void ReadMorphs(BinaryReader reader, MmdModel model) {
@@ -301,13 +407,30 @@ namespace LibMMD.Reader.PMX {
         private static void ReadConstraints(BinaryReader reader, MmdModel model) {
             throw new System.NotImplementedException();
         }
-
-        private class PmxMaterialDrawFlags {
-            public const byte PmxMaterialDrawDoubleFace = 0x01;
-            public const byte PmxMaterialDrawGroundShadow = 0x02;
-            public const byte PmxMaterialCastSelfShadow = 0x04;
-            public const byte PmxMaterialDrawSelfShadow = 0x08;
-            public const byte PmxMaterialDrawEdge = 0x10;
+        
+        [Flags]
+        private enum PmxMaterialDrawFlags {
+            MaterialDrawDoubleFace = 1 << 0,
+            MaterialDrawGroundShadow = 1 << 1,
+            MaterialCastSelfShadow = 1 << 2,
+            MaterialDrawSelfShadow = 1 << 3,
+            MaterialDrawEdge = 1 << 4
+        }
+        
+        [Flags]
+        private enum PmxBoneFlags {
+            BoneChildUseIndex = 1 << 0,
+            BoneRotatable = 1 << 1,
+            BoneMovable = 1 << 2, 
+            BoneVisible = 1 << 3, 
+            BoneControllable = 1 << 4, 
+            BoneHasIk = 1 << 5,
+            BoneAcquireRotate = 1 << 8, 
+            BoneAcquireTranslate = 1 << 9, 
+            BoneRotAxisFixed = 1 << 10, 
+            BoneUseLocalAxis = 1 << 11, 
+            BonePostPhysics = 1 << 12, 
+            BoneReceiveTransform = 1 << 13, 
         }
     }
 }

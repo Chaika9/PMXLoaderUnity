@@ -8,5 +8,6 @@
         public int AdditionalUVCount { get; set; }
         public int[] Triangles { get; set; }
         public Part[] Parts { get; set; }
+        public Bone[] Bones { get; set; }
     }
 }

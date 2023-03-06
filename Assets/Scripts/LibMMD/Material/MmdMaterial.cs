@@ -23,11 +23,11 @@ namespace LibMMD.Material {
         public string ToonTexturePath { get; set; }
         public string TexturePath { get; set; }
         public string SubTexturePath { get; set; }
-        public SubTextureTypeFlag SubTextureType { get; set; }
+        public SubTextureTypeFlags SubTextureType { get; set; }
         
         public string MetaInfo { get; set; }
         
-        public enum SubTextureTypeFlag : byte {
+        public enum SubTextureTypeFlags : byte {
             MatSubTexOff = 0,
             MatSubTexSph = 1,
             MatSubTexSpa = 2,
