@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using LibMMD.Model;
@@ -24,6 +25,7 @@ namespace LibMMD.Reader.PMX {
             ReadModelInfo(reader, model, config);
             ReadVertices(reader, model, config);
             ReadTriangles(reader, model, config);
+            IEnumerable<string> texturePaths = ReadTexturePaths(reader, config);
             return model;
         }
         
@@ -176,8 +178,14 @@ namespace LibMMD.Reader.PMX {
             }
         }
         
-        private  static void ReadTextures(BinaryReader reader, MmdModel model) {
-            throw new System.NotImplementedException();
+        private  static IEnumerable<string> ReadTexturePaths(BinaryReader reader, PmxConfig config) {
+            uint nbTextures = reader.ReadUInt32();
+            string[] texturePaths = new string[nbTextures];
+            
+            for (uint i = 0; i < nbTextures; i++) {
+                texturePaths[i] = ReaderUtil.ReadString(reader, config.Encoding);
+            }
+            return texturePaths;
         }
         
         private static void ReadParts(BinaryReader reader, MmdModel model) {
