@@ -132,10 +132,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 52807558}
-  - component: {fileID: 52807562}
   - component: {fileID: 52807560}
   - component: {fileID: 52807559}
-  - component: {fileID: 52807561}
   m_Layer: 0
   m_Name: Model
   m_TagString: Untagged
@@ -207,39 +205,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 52807556}
   m_Mesh: {fileID: 0}
---- !u!114 &52807561
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 52807556}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 313ff26337e54e9458432c53b85338a4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  rotationSpeed: {x: 0, y: 10, z: 0}
---- !u!114 &52807562
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 52807556}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 79cfa0375b134349b2408be451cc8095, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  modelPath: Assets/Resources/Models/The Traveler Female/The Traveler Female.pmx
-  textureFolderPath: Assets/Resources/Models/The Traveler Female
-  shader: {fileID: 10752, guid: 0000000000000000f000000000000000, type: 0}
-  showBones: 0
-  showBoneNames: 0
-  showRigidBodiesBones: 0
-  showJoints: 0
-  showJointNames: 0
 --- !u!1 &705507993
 GameObject:
   m_ObjectHideFlags: 0
