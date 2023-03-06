@@ -22,6 +22,8 @@ namespace LibMMD.Reader.PMX {
             var model = new MmdModel();
             PmxConfig config = ReadConfig(reader, model);
             ReadModelInfo(reader, model, config);
+            ReadVertices(reader, model, config);
+            ReadTriangles(reader, model, config);
             return model;
         }
         
@@ -161,8 +163,17 @@ namespace LibMMD.Reader.PMX {
             return param;
         }
 
-        private static void ReadTriangles(BinaryReader reader, MmdModel model) {
-            throw new System.NotImplementedException();
+        private static void ReadTriangles(BinaryReader reader, MmdModel model, PmxConfig config) {
+            uint nbTriangles = reader.ReadUInt32();
+            model.Triangles = new int[nbTriangles];
+            
+            if (nbTriangles % 3 != 0) {
+                throw new ModelParseException("Invalid number of triangles");
+            }
+            
+            for (uint i = 0; i < nbTriangles; i++) {
+                model.Triangles[i] = ReaderUtil.ReadIndex(reader, config.VertexIndexSize);
+            }
         }
         
         private  static void ReadTextures(BinaryReader reader, MmdModel model) {
