@@ -44,6 +44,7 @@ namespace LibMMD.Reader.PMX {
             ReadParts(reader, model, config, texturePaths);
             ReadBones(reader, model, config);
             ReadMorphs(reader, model, config);
+            ReadEntries(reader, config);
             return model;
         }
         
@@ -506,8 +507,24 @@ namespace LibMMD.Reader.PMX {
             return morphData;
         }
         
-        private static void ReadEntries(BinaryReader reader, MmdModel model) {
-            throw new System.NotImplementedException();
+        // Ignore values (for the moment)
+        private static void ReadEntries(BinaryReader reader, PmxConfig config) {
+            uint nbEntries = reader.ReadUInt32();
+            for (uint i = 0; i < nbEntries; i++) {
+                ReaderUtil.ReadString(reader, config.Encoding); // Name
+                ReaderUtil.ReadString(reader, config.Encoding); // Name English
+                reader.ReadByte();                              // Is special
+                
+                uint nbElement = reader.ReadUInt32();
+                for (uint j = 0; j < nbElement; j++) {
+                    bool isMorph = reader.ReadByte() == 1;
+                    if (isMorph) {
+                        ReaderUtil.ReadIndex(reader, config.MorphIndexSize); // Morph index
+                    } else {
+                        ReaderUtil.ReadIndex(reader, config.BoneIndexSize); // Bone index
+                    }
+                }
+            }
         }
         
         private static void ReadRigidBodies(BinaryReader reader, MmdModel model) {
