@@ -24,6 +24,14 @@ namespace LibMMD.Reader {
             return ReadString(reader, encoding, length);
         }
         
+        public static Quaternion ReadQuaternion(BinaryReader reader) {
+            float x = reader.ReadSingle();
+            float y = reader.ReadSingle();
+            float z = reader.ReadSingle();
+            float w = reader.ReadSingle();
+            return new Quaternion(x, y, z, w);
+        }
+        
         public static Vector4 ReadVector4(BinaryReader reader) {
             float x = reader.ReadSingle();
             float y = reader.ReadSingle();

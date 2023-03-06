@@ -43,6 +43,7 @@ namespace LibMMD.Reader.PMX {
             string[] texturePaths = ReadTexturePaths(reader, config);
             ReadParts(reader, model, config, texturePaths);
             ReadBones(reader, model, config);
+            ReadMorphs(reader, model, config);
             return model;
         }
         
@@ -392,8 +393,117 @@ namespace LibMMD.Reader.PMX {
             return link;
         }
         
-        private static void ReadMorphs(BinaryReader reader, MmdModel model) {
-            throw new System.NotImplementedException();
+        private static void ReadMorphs(BinaryReader reader, MmdModel model, PmxConfig config) {
+            uint nbMorphs = reader.ReadUInt32();
+            model.Morphs = new Morph[nbMorphs];
+            for (uint i = 0; i < nbMorphs; i++) {
+                model.Morphs[i] = ReadMorph(reader, model, config);
+            }
+        }
+        
+        private static Morph ReadMorph(BinaryReader reader, MmdModel model, PmxConfig config) {
+            var morph = new Morph {
+                Name = ReaderUtil.ReadString(reader, config.Encoding),
+                NameEnglish = ReaderUtil.ReadString(reader, config.Encoding),
+                Category = (Morph.MorphCategory) reader.ReadByte()
+            };
+            
+            if (morph.Category == Morph.MorphCategory.Face) {
+                // TODO: Implement
+            }
+            
+            morph.Type = (Morph.MorphType) reader.ReadByte();
+            
+            uint nbMorphDatas = reader.ReadUInt32();
+            morph.MorphDatas = new Morph.MorphData[nbMorphDatas];
+            
+            for (uint i = 0; i < nbMorphDatas; i++) {
+                switch (morph.Type) {
+                    case Morph.MorphType.Flip:
+                    case Morph.MorphType.Group:
+                        morph.MorphDatas[i] = ReadGroupMorph(reader, config);
+                        break;
+                    case Morph.MorphType.Vertex:
+                        morph.MorphDatas[i] = ReadVertexMorph(reader, config);
+                        break;
+                    case Morph.MorphType.Bone:
+                        morph.MorphDatas[i] = ReadBoneMorph(reader, config);
+                        break;
+                    case Morph.MorphType.UV:
+                    case Morph.MorphType.AdditionalUV1:
+                    case Morph.MorphType.AdditionalUV2:
+                    case Morph.MorphType.AdditionalUV3:
+                    case Morph.MorphType.AdditionalUV4:
+                        morph.MorphDatas[i] = ReadUvMorph(reader, config);
+                        break;
+                    case Morph.MorphType.Material:
+                        morph.MorphDatas[i] = ReadMaterialMorph(reader, model, config);
+                        break;
+                    case Morph.MorphType.Impulse:
+                        throw new ModelParseException("Impulse morphs are not supported");
+                    default:
+                        throw new ModelParseException("Unsupported morph type: " + morph.Type);
+                }
+            }
+
+            return morph;
+        }
+        
+        private static Morph.GroupMorph ReadGroupMorph(BinaryReader reader, PmxConfig config) {
+            var morphData = new Morph.GroupMorph {
+                MorphIndex = ReaderUtil.ReadIndex(reader, config.MorphIndexSize),
+                MorphRate = reader.ReadSingle()
+            };
+            return morphData;
+        }
+        
+        private static Morph.VertexMorph ReadVertexMorph(BinaryReader reader, PmxConfig config) {
+            var morphData = new Morph.VertexMorph {
+                VertexIndex = ReaderUtil.ReadIndex(reader, config.VertexIndexSize),
+                Offset = ReaderUtil.ReadVector3(reader)
+            };
+            return morphData;
+        }
+        
+        private static Morph.BoneMorph ReadBoneMorph(BinaryReader reader, PmxConfig config) {
+            var morphData = new Morph.BoneMorph {
+                BoneIndex = ReaderUtil.ReadIndex(reader, config.BoneIndexSize),
+                Translation = ReaderUtil.ReadVector3(reader),
+                Rotation = ReaderUtil.ReadQuaternion(reader)
+            };
+            return morphData;
+        }
+        
+        private static Morph.UvMorph ReadUvMorph(BinaryReader reader, PmxConfig config) {
+            var morphData = new Morph.UvMorph {
+                VertexIndex = ReaderUtil.ReadIndex(reader, config.VertexIndexSize),
+                Offset = ReaderUtil.ReadVector4(reader)
+            };
+            return morphData;
+        }
+        
+        private static Morph.MaterialMorph ReadMaterialMorph(BinaryReader reader, MmdModel model, PmxConfig config) {
+            var morphData = new Morph.MaterialMorph();
+            int index = ReaderUtil.ReadIndex(reader, config.MaterialIndexSize);
+            if (index < model.Parts.Length && index > 0) {
+                morphData.MaterialIndex = index;
+                morphData.Global = false;
+            } else {
+                morphData.MaterialIndex = 0;
+                morphData.Global = true;
+            }
+            
+            morphData.Method = (Morph.MaterialMorph.MaterialMorphMethod) reader.ReadByte();
+            morphData.Diffuse = ReaderUtil.ReadColor(reader, true);
+            morphData.Specular = ReaderUtil.ReadColor(reader);
+            morphData.Shininess = reader.ReadSingle();
+            morphData.Ambient = ReaderUtil.ReadColor(reader);
+            morphData.EdgeColor = ReaderUtil.ReadColor(reader, true);
+            morphData.EdgeSize = reader.ReadSingle();
+            morphData.Texture = ReaderUtil.ReadVector4(reader);
+            morphData.SubTexture = ReaderUtil.ReadVector4(reader);
+            morphData.ToonTexture = ReaderUtil.ReadVector4(reader);
+            return morphData;
         }
         
         private static void ReadEntries(BinaryReader reader, MmdModel model) {

@@ -9,5 +9,6 @@
         public int[] Triangles { get; set; }
         public Part[] Parts { get; set; }
         public Bone[] Bones { get; set; }
+        public Morph[] Morphs { get; set; }
     }
 }
