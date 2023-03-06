@@ -93,14 +93,17 @@ namespace LibMMD.Reader.PMX {
                     skinningOperator.Param = ReadSkinningParamBdef1(reader, config);
                     break;
                 case SkinningOperator.SkinningType.Bdef2:
+                    skinningOperator.Param = ReadSkinningParamBdef2(reader, config);
                     break;
                 case SkinningOperator.SkinningType.Qdef:
                 case SkinningOperator.SkinningType.Bdef4:
+                    skinningOperator.Param = ReadSkinningParamBdef4(reader, config);
                     break;
                 case SkinningOperator.SkinningType.Sdef:
+                    skinningOperator.Param = ReadSkinningParamSdef(reader, config);
                     break;
                 default:
-                    throw new ModelFormatException("Invalid skinning type: " + skinningType);
+                    throw new ModelParseException("Unknown skinning type");
             }
 
             return vertex;
@@ -108,8 +111,50 @@ namespace LibMMD.Reader.PMX {
         
         private static SkinningOperator.SkinningParam ReadSkinningParamBdef1(BinaryReader reader, PmxConfig config) {
             var param = new SkinningOperator.Bdef1 {
-                BoneIndex = ReaderUtil.ReadIndex(reader, config.BoneIndexSize)
+                BoneIndices = ReaderUtil.ReadIndex(reader, config.BoneIndexSize)
             };
+            return param;
+        }
+        
+        private static SkinningOperator.SkinningParam ReadSkinningParamBdef2(BinaryReader reader, PmxConfig config) {
+            var param = new SkinningOperator.Bdef2 {
+                BoneIndices = new int[2]
+            };
+            
+            param.BoneIndices[0] = ReaderUtil.ReadIndex(reader, config.BoneIndexSize);
+            param.BoneIndices[1] = ReaderUtil.ReadIndex(reader, config.BoneIndexSize);
+            param.BoneWeight = reader.ReadSingle();
+            return param;
+        }
+        
+        private static SkinningOperator.SkinningParam ReadSkinningParamBdef4(BinaryReader reader, PmxConfig config) {
+            var param = new SkinningOperator.Bdef4 {
+                BoneIndices = new int[4],
+                BoneWeights = new float[4]
+            };
+            
+            param.BoneIndices[0] = ReaderUtil.ReadIndex(reader, config.BoneIndexSize);
+            param.BoneIndices[1] = ReaderUtil.ReadIndex(reader, config.BoneIndexSize);
+            param.BoneIndices[2] = ReaderUtil.ReadIndex(reader, config.BoneIndexSize);
+            param.BoneIndices[3] = ReaderUtil.ReadIndex(reader, config.BoneIndexSize);
+            param.BoneWeights[0] = reader.ReadSingle();
+            param.BoneWeights[1] = reader.ReadSingle();
+            param.BoneWeights[2] = reader.ReadSingle();
+            param.BoneWeights[3] = reader.ReadSingle();
+            return param;
+        }
+        
+        private static SkinningOperator.SkinningParam ReadSkinningParamSdef(BinaryReader reader, PmxConfig config) {
+            var param = new SkinningOperator.Sdef {
+                BoneIndices = new int[2]
+            };
+            
+            param.BoneIndices[0] = ReaderUtil.ReadIndex(reader, config.BoneIndexSize);
+            param.BoneIndices[1] = ReaderUtil.ReadIndex(reader, config.BoneIndexSize);
+            param.BoneWeight = reader.ReadSingle();
+            param.C = ReaderUtil.ReadVector3(reader);
+            param.R0 = ReaderUtil.ReadVector3(reader);
+            param.R1 = ReaderUtil.ReadVector3(reader);
             return param;
         }
 

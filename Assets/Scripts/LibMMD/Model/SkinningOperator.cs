@@ -1,4 +1,6 @@
-﻿namespace LibMMD.Model {
+﻿using UnityEngine;
+
+namespace LibMMD.Model {
     public class SkinningOperator {
         public SkinningType Type { get; set; }
         public SkinningParam Param { get; set; }
@@ -14,7 +16,25 @@
         public abstract class SkinningParam {}
         
         public class Bdef1 : SkinningParam {
-            public int BoneIndex { get; set; }
+            public int BoneIndices { get; set; }
+        }
+
+        public class Bdef2 : SkinningParam {
+            public int[] BoneIndices { get; set; }
+            public float BoneWeight { get; set; }
+        }
+        
+        public class Bdef4 : SkinningParam {
+            public int[] BoneIndices { get; set; }
+            public float[] BoneWeights { get; set; }
+        }
+        
+        public class Sdef : SkinningParam {
+            public int[] BoneIndices { get; set; }
+            public float BoneWeight { get; set; }
+            public Vector3 C { get; set; }
+            public Vector3 R0 { get; set; }
+            public Vector3 R1 { get; set; }
         }
     }
 }
