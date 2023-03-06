@@ -6,5 +6,7 @@ namespace LibMMD.Model {
         public Vector3 Normal { get; set; }
         public Vector2 UvPosition { get; set; }
         public Vector4[] AdditionalUvPositions { get; set; }
+        public SkinningOperator SkinningOperator { get; set; }
+        public float EdgeScale { get; set; }
     }
 }

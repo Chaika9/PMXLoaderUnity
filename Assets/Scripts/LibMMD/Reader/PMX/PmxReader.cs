@@ -105,7 +105,10 @@ namespace LibMMD.Reader.PMX {
                 default:
                     throw new ModelParseException("Unknown skinning type");
             }
-
+            
+            vertex.SkinningOperator = skinningOperator;
+            
+            vertex.EdgeScale = reader.ReadSingle();
             return vertex;
         }
         
