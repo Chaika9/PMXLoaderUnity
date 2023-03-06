@@ -2,11 +2,26 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using LibMMD.Material;
 using LibMMD.Model;
 using UnityEngine;
 
 namespace LibMMD.Reader.PMX {
     public class PmxReader : ModelReader {
+        private readonly static string[] GlobalToonNames = {
+            "toon0.bmp",
+            "toon01.bmp",
+            "toon02.bmp",
+            "toon03.bmp",
+            "toon04.bmp",
+            "toon05.bmp",
+            "toon06.bmp",
+            "toon07.bmp",
+            "toon08.bmp",
+            "toon09.bmp",
+            "toon10.bmp"
+        };
+        
         protected override MmdModel ReadModel(BinaryReader reader) {
             PmxHeader header = ReadHeader(reader);
             
@@ -25,7 +40,8 @@ namespace LibMMD.Reader.PMX {
             ReadModelInfo(reader, model, config);
             ReadVertices(reader, model, config);
             ReadTriangles(reader, model, config);
-            IEnumerable<string> texturePaths = ReadTexturePaths(reader, config);
+            string[] texturePaths = ReadTexturePaths(reader, config);
+            ReadParts(reader, model, config, texturePaths);
             return model;
         }
         
@@ -178,7 +194,7 @@ namespace LibMMD.Reader.PMX {
             }
         }
         
-        private  static IEnumerable<string> ReadTexturePaths(BinaryReader reader, PmxConfig config) {
+        private  static string[] ReadTexturePaths(BinaryReader reader, PmxConfig config) {
             uint nbTextures = reader.ReadUInt32();
             string[] texturePaths = new string[nbTextures];
             
@@ -188,8 +204,82 @@ namespace LibMMD.Reader.PMX {
             return texturePaths;
         }
         
-        private static void ReadParts(BinaryReader reader, MmdModel model) {
-            throw new System.NotImplementedException();
+        private static void ReadParts(BinaryReader reader, MmdModel model, PmxConfig config, IReadOnlyList<string> texturePaths) {
+            uint nbParts = reader.ReadUInt32();
+            model.Parts = new Part[nbParts];
+            
+            int baseShift = 0;
+            for (uint i = 0; i < nbParts; i++) {
+                model.Parts[i] = ReadPart(reader, config, texturePaths, ref baseShift);
+            }
+        }
+        
+        private static Part ReadPart(BinaryReader reader, PmxConfig config, IReadOnlyList<string> texturePaths, ref int baseShift) {
+            var part = new Part {
+                Material = ReadMaterial(reader, config, texturePaths)
+            };
+
+            int triangleIndexCount = reader.ReadInt32();
+            if (triangleIndexCount % 3 != 0) {
+                throw new ModelParseException("Invalid number of triangles");
+            }
+            
+            part.BaseShift = baseShift;
+            part.TriangleIndexCount = triangleIndexCount;
+            baseShift += triangleIndexCount;
+            return part;
+        }
+        
+        private static MmdMaterial ReadMaterial(BinaryReader reader, PmxConfig config, IReadOnlyList<string> texturePaths) {
+            var material = new MmdMaterial {
+                Name = ReaderUtil.ReadString(reader, config.Encoding),
+                NameEnglish = ReaderUtil.ReadString(reader, config.Encoding),
+                
+                DiffuseColor = ReaderUtil.ReadColor(reader, true),
+                SpecularColor = ReaderUtil.ReadColor(reader),
+                Shininess = reader.ReadSingle(),
+                AmbientColor = ReaderUtil.ReadColor(reader)
+            };
+
+            byte drawFlag = reader.ReadByte();
+            material.DrawDoubleFace = (drawFlag & PmxMaterialDrawFlags.PmxMaterialDrawDoubleFace) != 0;
+            material.DrawGroundShadow = (drawFlag & PmxMaterialDrawFlags.PmxMaterialDrawGroundShadow) != 0;
+            material.CastSelfShadow = (drawFlag & PmxMaterialDrawFlags.PmxMaterialCastSelfShadow) != 0;
+            material.DrawSelfShadow = (drawFlag & PmxMaterialDrawFlags.PmxMaterialDrawSelfShadow) != 0;
+            material.DrawEdge = (drawFlag & PmxMaterialDrawFlags.PmxMaterialDrawEdge) != 0;
+            
+            material.EdgeColor = ReaderUtil.ReadColor(reader, true);
+            material.EdgeSize = reader.ReadSingle();
+            
+            int textureIndex = ReaderUtil.ReadIndex(reader, config.TextureIndexSize);
+            // Check if the texture index is valid and set the texture path
+            if (textureIndex < texturePaths.Count && textureIndex >= 0) {
+                material.TexturePath = texturePaths[textureIndex];
+            }
+            
+            int subTextureIndex = ReaderUtil.ReadIndex(reader, config.TextureIndexSize);
+            // Check if the sub texture index is valid and set the sub texture path
+            if (subTextureIndex < texturePaths.Count && subTextureIndex >= 0) {
+                material.SubTexturePath = texturePaths[subTextureIndex];
+            }
+            material.SubTextureType = (MmdMaterial.SubTextureTypeFlag) reader.ReadByte();
+            
+            bool useGlobalToon = reader.ReadByte() != 0;
+            if (useGlobalToon) {
+                int globalToonTextureIndex = reader.ReadByte();
+                if (globalToonTextureIndex < GlobalToonNames.Length - 1) {
+                    material.ToonTexturePath = GlobalToonNames[globalToonTextureIndex + 1];
+                }
+            } else {
+                int toonTextureIndex = ReaderUtil.ReadIndex(reader, config.TextureIndexSize);
+                // Check if the toon texture index is valid and set the toon texture path
+                if (toonTextureIndex < texturePaths.Count && toonTextureIndex >= 0) {
+                    material.ToonTexturePath = texturePaths[toonTextureIndex];
+                }
+            }
+            
+            material.MetaInfo = ReaderUtil.ReadString(reader, config.Encoding);
+            return material;
         }
         
         private static void ReadBones(BinaryReader reader, MmdModel model) {
@@ -210,6 +300,14 @@ namespace LibMMD.Reader.PMX {
         
         private static void ReadConstraints(BinaryReader reader, MmdModel model) {
             throw new System.NotImplementedException();
+        }
+
+        private class PmxMaterialDrawFlags {
+            public const byte PmxMaterialDrawDoubleFace = 0x01;
+            public const byte PmxMaterialDrawGroundShadow = 0x02;
+            public const byte PmxMaterialCastSelfShadow = 0x04;
+            public const byte PmxMaterialDrawSelfShadow = 0x08;
+            public const byte PmxMaterialDrawEdge = 0x10;
         }
     }
 }

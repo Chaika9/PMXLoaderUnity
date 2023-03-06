@@ -53,5 +53,12 @@ namespace LibMMD.Reader {
                 _ => throw new IOException("Invalid index size: " + configBoneIndexSize)
             };
         }
+        public static Color ReadColor(BinaryReader reader, bool hasAlpha = false) {
+            float r = reader.ReadSingle();
+            float g = reader.ReadSingle();
+            float b = reader.ReadSingle();
+            float a = hasAlpha ? reader.ReadSingle() : 1.0f;
+            return new Color(r, g, b, a);
+        }
     }
 }

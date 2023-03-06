@@ -7,5 +7,6 @@
         public Vertex[] Vertices { get; set; }
         public int AdditionalUVCount { get; set; }
         public int[] Triangles { get; set; }
+        public Part[] Parts { get; set; }
     }
 }
