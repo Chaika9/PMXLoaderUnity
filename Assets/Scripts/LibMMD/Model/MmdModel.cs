@@ -10,5 +10,6 @@
         public Part[] Parts { get; set; }
         public Bone[] Bones { get; set; }
         public Morph[] Morphs { get; set; }
+        public RigidBody[] RigidBodies { get; set; }
     }
 }

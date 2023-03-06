@@ -45,6 +45,7 @@ namespace LibMMD.Reader.PMX {
             ReadBones(reader, model, config);
             ReadMorphs(reader, model, config);
             ReadEntries(reader, config);
+            ReadRigidBodies(reader, model, config);
             return model;
         }
         
@@ -527,8 +528,34 @@ namespace LibMMD.Reader.PMX {
             }
         }
         
-        private static void ReadRigidBodies(BinaryReader reader, MmdModel model) {
-            throw new System.NotImplementedException();
+        private static void ReadRigidBodies(BinaryReader reader, MmdModel model, PmxConfig config) {
+            uint nbRigidBodies = reader.ReadUInt32();
+            model.RigidBodies = new RigidBody[nbRigidBodies];
+
+            for (uint i = 0; i < nbRigidBodies; i++) {
+                model.RigidBodies[i] = ReadRigidBody(reader, config);
+            }
+        }
+
+        private static RigidBody ReadRigidBody(BinaryReader reader, PmxConfig config) {
+            var rigidBody = new RigidBody {
+                Name = ReaderUtil.ReadString(reader, config.Encoding),
+                NameEnglish = ReaderUtil.ReadString(reader, config.Encoding),
+                AssociatedBoneIndex = ReaderUtil.ReadIndex(reader, config.BoneIndexSize),
+                CollisionGroup = reader.ReadByte(),
+                CollisionMask = reader.ReadUInt16(),
+                Shape = (RigidBody.RigidBodyShape) reader.ReadByte(),
+                Dimemsions = ReaderUtil.ReadVector3(reader),
+                Position = ReaderUtil.ReadVector3(reader),
+                Rotation = ReaderUtil.ReadVector3(reader),
+                Mass = reader.ReadSingle(),
+                TranslateDamp = reader.ReadSingle(),
+                RotateDamp = reader.ReadSingle(),
+                Restitution = reader.ReadSingle(),
+                Friction = reader.ReadSingle(),
+                Type = (RigidBody.RigidBodyType) reader.ReadByte()
+            };
+            return rigidBody;
         }
         
         private static void ReadConstraints(BinaryReader reader, MmdModel model) {
